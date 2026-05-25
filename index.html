@@ -1,0 +1,2530 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#00c853">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>BETA — Bekal Tracker</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700;800&family=Nunito:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+<style>
+/* ═══════════════════════════════════════════
+   ROOT VARIABLES
+═══════════════════════════════════════════ */
+:root {
+  --bg: #edfaf0;
+  --surface: #ffffff;
+  --surface-2: #f4fbf5;
+  --surface-3: #e8f5ea;
+  --primary: #00c853;
+  --primary-mid: #00a846;
+  --primary-dark: #007a32;
+  --primary-light: #b9f6ca;
+  --primary-glow: rgba(0,200,83,0.2);
+  --gold: #ffb300;
+  --gold-light: #fff8e1;
+  --coral: #ff5252;
+  --coral-light: #fff5f5;
+  --blue: #2979ff;
+  --blue-light: #e3f2fd;
+  --purple: #7c4dff;
+  --text-1: #0d2614;
+  --text-2: #3a6642;
+  --text-3: #7aaa7c;
+  --border: #c8eecb;
+  --shadow-sm: 0 2px 8px rgba(0,80,20,0.08);
+  --shadow-md: 0 8px 24px rgba(0,80,20,0.12);
+  --shadow-lg: 0 16px 40px rgba(0,80,20,0.16);
+  --nav-h: 72px;
+  --radius-sm: 12px;
+  --radius-md: 20px;
+  --radius-lg: 28px;
+}
+
+[data-theme="dark"] {
+  --bg: #07120a;
+  --surface: #111f14;
+  --surface-2: #172a1a;
+  --surface-3: #1e3521;
+  --primary: #69f0ae;
+  --primary-mid: #00e676;
+  --primary-dark: #b9f6ca;
+  --primary-light: #1b3d22;
+  --primary-glow: rgba(105,240,174,0.15);
+  --gold: #ffd740;
+  --gold-light: #2a2000;
+  --coral: #ff6e6e;
+  --coral-light: #2d1010;
+  --blue: #82b1ff;
+  --blue-light: #0d1a2d;
+  --purple: #b388ff;
+  --text-1: #e8f5e9;
+  --text-2: #a5d6a7;
+  --text-3: #4a8a4c;
+  --border: #1e3d21;
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
+  --shadow-md: 0 8px 24px rgba(0,0,0,0.4);
+  --shadow-lg: 0 16px 40px rgba(0,0,0,0.5);
+}
+
+/* ═══════════════════════════════════════════
+   BASE RESET
+═══════════════════════════════════════════ */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html { height: 100%; }
+
+body {
+  font-family: 'Nunito', sans-serif;
+  background: var(--bg);
+  display: flex;
+  justify-content: center;
+  height: 100%;
+  overflow: hidden;
+  color: var(--text-1);
+  transition: background 0.3s;
+}
+
+/* ═══════════════════════════════════════════
+   APP CONTAINER
+═══════════════════════════════════════════ */
+#app {
+  width: 100%;
+  max-width: 480px;
+  height: 100%;
+  background: var(--surface);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+}
+
+/* ═══════════════════════════════════════════
+   SCREENS
+═══════════════════════════════════════════ */
+.screen {
+  display: none;
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 0 0 calc(var(--nav-h) + 16px) 0;
+  scroll-behavior: smooth;
+}
+
+.screen.active {
+  display: block;
+  animation: screenIn 0.35s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+
+@keyframes screenIn {
+  from { opacity:0; transform:translateY(18px) scale(0.98); }
+  to   { opacity:1; transform:translateY(0) scale(1); }
+}
+
+/* Auth screens don't need nav padding */
+#loginScreen, #registerScreen {
+  padding-bottom: 0;
+}
+
+/* ═══════════════════════════════════════════
+   TYPOGRAPHY
+═══════════════════════════════════════════ */
+h1, h2, h3, h4 {
+  font-family: 'Quicksand', sans-serif;
+  color: var(--text-1);
+  transition: color 0.3s;
+}
+
+/* ═══════════════════════════════════════════
+   BOTTOM NAVIGATION (ANDROID-FIXED)
+═══════════════════════════════════════════ */
+#bottomNav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  height: var(--nav-h);
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  border-radius: 24px 24px 0 0;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+  z-index: 1000;
+  align-items: center;
+  justify-content: space-around;
+  padding: 0 8px;
+  transition: background 0.3s, border-color 0.3s;
+}
+
+#bottomNav.visible { display: flex; }
+
+/* CRITICAL: Use <button> for Android touch reliability */
+.nav-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex: 1;
+  height: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-3);
+  font-family: 'Nunito', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 8px 4px;
+  position: relative;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  transition: color 0.2s;
+  outline: none;
+  min-width: 48px;
+  min-height: 48px;
+}
+
+.nav-btn i {
+  font-size: 20px;
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), color 0.2s;
+}
+
+.nav-btn.active {
+  color: var(--primary);
+}
+
+.nav-btn.active i {
+  transform: translateY(-3px) scale(1.15);
+}
+
+.nav-btn .nav-dot {
+  position: absolute;
+  top: 8px;
+  width: 36px;
+  height: 4px;
+  background: var(--primary);
+  border-radius: 0 0 4px 4px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.nav-btn.active .nav-dot { opacity: 1; }
+
+/* ═══════════════════════════════════════════
+   TOAST NOTIFICATIONS
+═══════════════════════════════════════════ */
+#toastWrap {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 90%;
+  max-width: 440px;
+  pointer-events: none;
+}
+
+.toast {
+  background: var(--surface);
+  border-radius: 14px;
+  padding: 14px 18px;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-1);
+  border-left: 4px solid var(--primary);
+  animation: toastIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both, toastOut 0.3s 2.8s ease forwards;
+  pointer-events: all;
+}
+
+.toast.error { border-left-color: var(--coral); }
+.toast.warning { border-left-color: var(--gold); }
+.toast.info { border-left-color: var(--blue); }
+
+@keyframes toastIn {
+  from { opacity:0; transform:translateY(-20px) scale(0.9); }
+  to   { opacity:1; transform:translateY(0) scale(1); }
+}
+@keyframes toastOut {
+  from { opacity:1; transform:translateY(0) scale(1); }
+  to   { opacity:0; transform:translateY(-10px) scale(0.95); }
+}
+
+/* ═══════════════════════════════════════════
+   CONFETTI
+═══════════════════════════════════════════ */
+.confetti-piece {
+  position: fixed;
+  top: -10px;
+  width: 10px;
+  height: 14px;
+  border-radius: 3px;
+  z-index: 9998;
+  animation: confettiFall linear both;
+  pointer-events: none;
+}
+
+@keyframes confettiFall {
+  0%   { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+}
+
+/* ═══════════════════════════════════════════
+   SPLASH SCREEN
+═══════════════════════════════════════════ */
+#splashScreen {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(145deg, #00c853, #007a32);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  padding-bottom: 0;
+  overflow: hidden;
+}
+
+.splash-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(40px);
+  animation: blobFloat 6s infinite alternate ease-in-out;
+}
+.splash-blob-1 { width:250px;height:250px;background:rgba(255,255,255,0.2);top:-80px;right:-80px; }
+.splash-blob-2 { width:200px;height:200px;background:rgba(0,0,0,0.15);bottom:-60px;left:-60px;animation-delay:-3s; }
+
+@keyframes blobFloat {
+  0%  { transform:scale(1) translate(0,0); }
+  100%{ transform:scale(1.1) translate(20px,20px); }
+}
+
+.splash-logo {
+  font-size: 70px;
+  margin-bottom: 16px;
+  animation: logoPop 0.8s 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+.splash-title {
+  font-family: 'Quicksand', sans-serif;
+  font-size: 42px;
+  font-weight: 800;
+  color: white;
+  letter-spacing: 2px;
+  animation: logoPop 0.8s 0.5s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+.splash-sub {
+  font-size: 15px;
+  color: rgba(255,255,255,0.85);
+  margin-top: 6px;
+  font-weight: 600;
+  animation: logoPop 0.8s 0.7s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+.splash-loader {
+  margin-top: 50px;
+  width: 120px;
+  height: 4px;
+  background: rgba(255,255,255,0.3);
+  border-radius: 4px;
+  overflow: hidden;
+  animation: logoPop 0.5s 0.9s both;
+}
+.splash-loader-bar {
+  height: 100%;
+  width: 0%;
+  background: white;
+  border-radius: 4px;
+  animation: loaderFill 1.5s 1s ease forwards;
+}
+@keyframes loaderFill { to { width:100%; } }
+@keyframes logoPop {
+  from { opacity:0; transform:scale(0.5) translateY(20px); }
+  to   { opacity:1; transform:scale(1) translateY(0); }
+}
+
+/* ═══════════════════════════════════════════
+   AUTH SCREENS
+═══════════════════════════════════════════ */
+.auth-bg {
+  min-height: 100%;
+  background: linear-gradient(165deg, var(--primary-dark) 0%, var(--primary) 50%, var(--bg) 100%);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+}
+
+.auth-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(35px);
+  opacity: 0.6;
+  animation: blobFloat 7s infinite alternate;
+}
+.auth-blob-1 { width:180px;height:180px;background:rgba(255,255,255,0.25);top:-40px;left:-40px; }
+.auth-blob-2 { width:220px;height:220px;background:rgba(0,0,0,0.1);top:80px;right:-60px;animation-delay:-3s; }
+
+.auth-card {
+  background: var(--surface);
+  border-radius: 32px 32px 0 0;
+  padding: 32px 24px 40px;
+  width: 100%;
+  position: relative;
+  z-index: 2;
+  margin-top: 180px;
+  box-shadow: 0 -10px 40px rgba(0,0,0,0.12);
+  animation: slideUp 0.5s cubic-bezier(0.34,1.2,0.64,1) both;
+}
+@keyframes slideUp {
+  from { transform:translateY(100px); opacity:0; }
+  to   { transform:translateY(0); opacity:1; }
+}
+
+.auth-icon {
+  position: absolute;
+  top: -36px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 72px;
+  height: 72px;
+  background: var(--primary);
+  border-radius: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  box-shadow: 0 8px 24px var(--primary-glow);
+  color: white;
+  animation: iconPop 0.6s 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+@keyframes iconPop {
+  from { transform:translateX(-50%) scale(0); }
+  to   { transform:translateX(-50%) scale(1); }
+}
+
+.auth-title {
+  text-align: center;
+  font-size: 24px;
+  font-weight: 800;
+  margin: 32px 0 4px;
+  color: var(--text-1);
+}
+.auth-sub {
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-3);
+  margin-bottom: 24px;
+}
+
+/* ═══════════════════════════════════════════
+   FORM INPUTS
+═══════════════════════════════════════════ */
+.form-group { margin-bottom: 14px; }
+
+.form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-2);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon {
+  position: absolute;
+  left: 14px;
+  color: var(--text-3);
+  font-size: 15px;
+  z-index: 1;
+  pointer-events: none;
+  transition: color 0.2s;
+}
+
+.form-input, .form-select {
+  width: 100%;
+  padding: 14px 14px 14px 42px;
+  background: var(--surface-2);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 16px; /* ≥16px prevents zoom on mobile */
+  font-family: 'Nunito', sans-serif;
+  font-weight: 500;
+  color: var(--text-1);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.3s;
+  -webkit-appearance: none;
+  appearance: none;
+  touch-action: manipulation;
+}
+
+.form-input:focus, .form-select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px var(--primary-glow);
+  background: var(--surface);
+}
+
+.form-input:focus + .input-icon,
+.input-wrap:focus-within .input-icon { color: var(--primary); }
+
+/* Shake animation for invalid inputs */
+@keyframes shake {
+  0%,100% { transform:translateX(0); }
+  20%      { transform:translateX(-8px); }
+  40%      { transform:translateX(8px); }
+  60%      { transform:translateX(-6px); }
+  80%      { transform:translateX(6px); }
+}
+.shake { animation: shake 0.4s ease; border-color: var(--coral) !important; }
+
+/* ═══════════════════════════════════════════
+   BUTTONS
+═══════════════════════════════════════════ */
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 16px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: 'Quicksand', sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  touch-action: manipulation;
+  transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+  -webkit-user-select: none;
+  user-select: none;
+  outline: none;
+}
+
+.btn:active { transform: scale(0.97); }
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+  box-shadow: 0 6px 20px var(--primary-glow);
+}
+.btn-primary:active { box-shadow: 0 2px 8px var(--primary-glow); }
+
+.btn-outline {
+  background: transparent;
+  color: var(--primary);
+  border: 2px solid var(--primary);
+  margin-top: 10px;
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, var(--coral), #c62828);
+  color: white;
+  box-shadow: 0 6px 20px rgba(255,82,82,0.3);
+}
+
+.btn-gold {
+  background: linear-gradient(135deg, #ffb300, #ff6f00);
+  color: white;
+  box-shadow: 0 6px 20px rgba(255,179,0,0.3);
+}
+
+.btn-blue {
+  background: linear-gradient(135deg, var(--blue), #1565C0);
+  color: white;
+  box-shadow: 0 6px 20px rgba(41,121,255,0.3);
+}
+
+.btn-sm {
+  padding: 10px 16px;
+  font-size: 13px;
+  border-radius: 10px;
+}
+
+/* Ripple effect */
+.btn::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.4);
+  width: 0; height: 0;
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  transition: width 0.5s, height 0.5s, opacity 0.5s;
+  opacity: 0;
+}
+.btn:active::after {
+  width: 200px; height: 200px; opacity: 0;
+  transition: 0s;
+}
+
+.btn-dashed {
+  background: transparent;
+  color: var(--primary);
+  border: 2px dashed var(--primary);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  width: 100%;
+  font-family: 'Quicksand', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background 0.2s;
+  outline: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.btn-dashed:active { background: var(--primary-light); }
+
+/* ═══════════════════════════════════════════
+   CARDS
+═══════════════════════════════════════════ */
+.card {
+  background: var(--surface-2);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  transition: background 0.3s, border-color 0.3s;
+}
+
+.card-glass {
+  background: rgba(255,255,255,0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.5);
+}
+
+[data-theme="dark"] .card-glass {
+  background: rgba(17,31,20,0.7);
+  border-color: rgba(255,255,255,0.08);
+}
+
+/* ═══════════════════════════════════════════
+   PAGE HEADER
+═══════════════════════════════════════════ */
+.page-header {
+  padding: 20px 20px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.page-title {
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.icon-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-2);
+  cursor: pointer;
+  font-size: 16px;
+  touch-action: manipulation;
+  transition: background 0.2s, color 0.2s;
+  outline: none;
+}
+.icon-btn:active { background: var(--primary-light); color: var(--primary); }
+
+/* ═══════════════════════════════════════════
+   DASHBOARD
+═══════════════════════════════════════════ */
+.dash-inner { padding: 0 16px; }
+
+/* Balance Card */
+.balance-card {
+  background: linear-gradient(135deg, #00c853 0%, #005c24 100%);
+  border-radius: var(--radius-lg);
+  padding: 24px 20px 20px;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 16px;
+  box-shadow: 0 12px 32px rgba(0,100,30,0.35);
+}
+
+[data-theme="dark"] .balance-card {
+  background: linear-gradient(135deg, #1b5e20 0%, #0a2c10 100%);
+}
+
+.balance-card-decor {
+  position: absolute;
+  right: -30px;
+  top: -30px;
+  width: 160px;
+  height: 160px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 50%;
+}
+.balance-card-decor2 {
+  position: absolute;
+  right: 20px;
+  bottom: -40px;
+  width: 100px;
+  height: 100px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 50%;
+}
+
+.balance-label {
+  font-size: 12px;
+  color: rgba(255,255,255,0.7);
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.balance-amount {
+  font-family: 'Quicksand', sans-serif;
+  font-size: 34px;
+  font-weight: 800;
+  color: white;
+  letter-spacing: 1px;
+  transition: opacity 0.3s;
+}
+.balance-change {
+  font-size: 13px;
+  color: rgba(255,255,255,0.8);
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.balance-sparkline-wrap {
+  margin-top: 16px;
+  height: 40px;
+}
+#sparklineChart { width: 100% !important; }
+
+/* Stats Row */
+.stats-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.stat-card {
+  background: var(--surface-2);
+  border-radius: var(--radius-md);
+  padding: 14px 12px;
+  border: 1px solid var(--border);
+  text-align: center;
+  transition: transform 0.2s;
+}
+.stat-card:active { transform: scale(0.97); }
+
+.stat-card-icon {
+  font-size: 18px;
+  margin-bottom: 6px;
+}
+.stat-card-val {
+  font-family: 'Quicksand', sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text-1);
+  line-height: 1.2;
+}
+.stat-card-lbl {
+  font-size: 10px;
+  color: var(--text-3);
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+/* Budget Bar */
+.budget-bar-wrap {
+  background: var(--surface-2);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+.budget-bar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-2);
+}
+.budget-track {
+  height: 10px;
+  background: var(--surface-3);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.budget-fill {
+  height: 100%;
+  border-radius: 10px;
+  background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+  transition: width 0.8s cubic-bezier(0.34,1.2,0.64,1);
+}
+.budget-fill.warning { background: linear-gradient(90deg, var(--gold), #e65100); }
+.budget-fill.danger  { background: linear-gradient(90deg, var(--coral), #b71c1c); }
+
+/* Section Label */
+.section-label {
+  font-family: 'Quicksand', sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text-1);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-label .badge {
+  background: var(--primary-glow);
+  color: var(--primary);
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-weight: 700;
+}
+
+/* Chart containers */
+.chart-card {
+  background: var(--surface-2);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.chart-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-2);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ═══════════════════════════════════════════
+   TRANSACTION HISTORY LIST
+═══════════════════════════════════════════ */
+.tx-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+  border: 1px solid var(--border);
+  transition: transform 0.2s, box-shadow 0.2s;
+  position: relative;
+  overflow: hidden;
+  animation: txIn 0.35s ease both;
+}
+@keyframes txIn {
+  from { opacity:0; transform:translateX(-10px); }
+  to   { opacity:1; transform:translateX(0); }
+}
+.tx-item:active { transform: scale(0.99); }
+
+.tx-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.tx-icon.income { background: rgba(0,200,83,0.12); }
+.tx-icon.expense { background: rgba(255,82,82,0.1); }
+
+.tx-info { flex: 1; min-width: 0; }
+.tx-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tx-meta {
+  font-size: 11px;
+  color: var(--text-3);
+  margin-top: 2px;
+}
+
+.tx-amount {
+  font-family: 'Quicksand', sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+.tx-amount.income { color: var(--primary); }
+.tx-amount.expense { color: var(--coral); }
+
+.tx-del-btn {
+  background: rgba(255,82,82,0.1);
+  border: none;
+  color: var(--coral);
+  border-radius: 8px;
+  padding: 6px 8px;
+  cursor: pointer;
+  font-size: 13px;
+  margin-left: 4px;
+  touch-action: manipulation;
+  outline: none;
+  flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════
+   INCOME SCREEN
+═══════════════════════════════════════════ */
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.cat-btn {
+  background: var(--surface-2);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 6px;
+  text-align: center;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-2);
+  font-family: 'Nunito', sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  touch-action: manipulation;
+  transition: border-color 0.2s, background 0.2s, color 0.2s;
+  outline: none;
+}
+.cat-btn .cat-emoji { font-size: 22px; line-height: 1; }
+.cat-btn.selected {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  color: var(--primary);
+}
+.cat-btn:active { transform: scale(0.95); }
+
+/* ═══════════════════════════════════════════
+   EXPENSE ROWS
+═══════════════════════════════════════════ */
+.expense-row {
+  background: var(--surface-2);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+  animation: txIn 0.3s ease both;
+  position: relative;
+}
+
+.expense-row-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.exp-num {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--primary);
+  background: var(--primary-light);
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+
+.exp-del {
+  background: var(--coral-light);
+  border: none;
+  color: var(--coral);
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 14px;
+  touch-action: manipulation;
+  outline: none;
+}
+
+.exp-subtotal {
+  text-align: right;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-2);
+  margin-top: 8px;
+}
+.exp-subtotal span { color: var(--primary); font-size: 15px; }
+
+.total-card {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  border-radius: var(--radius-md);
+  padding: 18px 20px;
+  color: white;
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.total-card .lbl { font-size: 13px; opacity: 0.85; font-weight: 600; }
+.total-card .val {
+  font-family: 'Quicksand', sans-serif;
+  font-size: 26px;
+  font-weight: 800;
+}
+
+/* ═══════════════════════════════════════════
+   HISTORY SCREEN
+═══════════════════════════════════════════ */
+.search-bar-wrap {
+  position: relative;
+  margin-bottom: 12px;
+}
+.search-bar-wrap .input-icon { left: 14px; }
+.search-input {
+  width: 100%;
+  padding: 13px 14px 13px 42px;
+  background: var(--surface-2);
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  font-size: 15px;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 500;
+  color: var(--text-1);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  touch-action: manipulation;
+}
+.search-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px var(--primary-glow);
+}
+
+.filter-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.filter-tab {
+  flex: 1;
+  padding: 9px 6px;
+  border-radius: 10px;
+  border: 2px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 700;
+  font-family: 'Quicksand', sans-serif;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: all 0.2s;
+  outline: none;
+}
+.filter-tab.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+}
+
+/* ═══════════════════════════════════════════
+   PROFILE SCREEN
+═══════════════════════════════════════════ */
+.profile-header {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  padding: 40px 20px 60px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.profile-header::after {
+  content: '';
+  position: absolute;
+  bottom: -40px;
+  left: -20px;
+  right: -20px;
+  height: 80px;
+  background: var(--surface);
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+}
+
+[data-theme="dark"] .profile-header::after { background: var(--surface); }
+
+.avatar-wrap {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 12px;
+}
+.avatar {
+  width: 90px;
+  height: 90px;
+  border-radius: 28px;
+  border: 3px solid rgba(255,255,255,0.5);
+  object-fit: cover;
+  background: rgba(255,255,255,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  color: white;
+  overflow: hidden;
+}
+.avatar img { width:100%; height:100%; object-fit:cover; }
+.avatar-edit-btn {
+  position: absolute;
+  bottom: -6px;
+  right: -6px;
+  width: 30px;
+  height: 30px;
+  background: white;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+  font-size: 13px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  touch-action: manipulation;
+}
+.profile-name {
+  font-family: 'Quicksand', sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  color: white;
+  margin-bottom: 4px;
+}
+.profile-uname { font-size: 13px; color: rgba(255,255,255,0.7); }
+
+.profile-body { padding: 20px 16px; }
+
+.info-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 15px 16px;
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  margin-bottom: 10px;
+}
+.info-row-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--primary-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.info-row-lbl { font-size: 11px; color: var(--text-3); font-weight: 600; }
+.info-row-val { font-size: 14px; font-weight: 700; color: var(--text-1); }
+
+/* Achievements */
+.ach-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.ach-card {
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: opacity 0.3s;
+}
+.ach-card.locked { opacity: 0.4; }
+.ach-emoji { font-size: 24px; }
+.ach-name { font-size: 12px; font-weight: 700; color: var(--text-1); }
+.ach-desc { font-size: 10px; color: var(--text-3); margin-top: 2px; }
+
+/* Budget Setting */
+.budget-input-wrap {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+.budget-input-wrap .form-group { flex: 1; margin-bottom: 0; }
+
+/* ═══════════════════════════════════════════
+   EMPTY STATE
+═══════════════════════════════════════════ */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-3);
+}
+.empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.5; }
+.empty-state p { font-size: 14px; font-weight: 600; }
+
+/* ═══════════════════════════════════════════
+   DIVIDER
+═══════════════════════════════════════════ */
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 16px 0;
+}
+
+/* ═══════════════════════════════════════════
+   SCROLL PADDING
+═══════════════════════════════════════════ */
+.screen-pad { 
+  padding: 16px 16px calc(var(--nav-h) + 24px) 16px; 
+}
+
+/* ═══════════════════════════════════════════
+   PULSE ANIMATION
+═══════════════════════════════════════════ */
+@keyframes pulse {
+  0%  { box-shadow: 0 0 0 0 var(--primary-glow); }
+  70% { box-shadow: 0 0 0 12px rgba(0,200,83,0); }
+  100%{ box-shadow: 0 0 0 0 rgba(0,200,83,0); }
+}
+.pulse { animation: pulse 2s infinite; }
+
+/* ═══════════════════════════════════════════
+   LOADING SKELETON
+═══════════════════════════════════════════ */
+.skeleton {
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ═══════════════════════════════════════════
+   MISC
+═══════════════════════════════════════════ */
+.text-primary { color: var(--primary); }
+.text-coral   { color: var(--coral); }
+.text-gold    { color: var(--gold); }
+.text-muted   { color: var(--text-3); }
+
+.mb-8 { margin-bottom: 8px; }
+.mb-12{ margin-bottom: 12px; }
+.mb-16{ margin-bottom: 16px; }
+.mb-20{ margin-bottom: 20px; }
+
+.row-flex { display: flex; gap: 10px; }
+.row-flex > * { flex: 1; }
+
+select option { background: var(--surface); color: var(--text-1); }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ═════════════════════════════════════
+       SPLASH SCREEN
+  ══════════════════════════════════════ -->
+  <div id="splashScreen">
+    <div class="splash-blob splash-blob-1"></div>
+    <div class="splash-blob splash-blob-2"></div>
+    <div class="splash-logo">💰</div>
+    <div class="splash-title">BETA</div>
+    <div class="splash-sub">Bekal Tracker — Pantau jajanmu!</div>
+    <div class="splash-loader"><div class="splash-loader-bar"></div></div>
+  </div>
+
+  <!-- ═════════════════════════════════════
+       LOGIN SCREEN
+  ══════════════════════════════════════ -->
+  <div id="loginScreen" class="screen">
+    <div class="auth-bg">
+      <div class="auth-blob auth-blob-1"></div>
+      <div class="auth-blob auth-blob-2"></div>
+      <div class="auth-card">
+        <div class="auth-icon"><i class="fa-solid fa-wallet"></i></div>
+        <h2 class="auth-title">Selamat Datang!</h2>
+        <p class="auth-sub">Masuk untuk pantau jajan kamu 😄</p>
+
+        <div class="form-group">
+          <label class="form-label">Username</label>
+          <div class="input-wrap">
+            <i class="fa-solid fa-user input-icon"></i>
+            <input id="loginUser" class="form-input" type="text" placeholder="Username kamu" autocomplete="username">
+          </div>
+        </div>
+        <div class="form-group mb-20">
+          <label class="form-label">Password</label>
+          <div class="input-wrap">
+            <i class="fa-solid fa-lock input-icon"></i>
+            <input id="loginPass" class="form-input" type="password" placeholder="Password rahasia" autocomplete="current-password">
+          </div>
+        </div>
+
+        <button class="btn btn-primary" id="loginBtn"><i class="fa-solid fa-arrow-right-to-bracket"></i> Masuk</button>
+        <button class="btn btn-outline" id="goRegisterBtn">Belum punya akun? Daftar dulu!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═════════════════════════════════════
+       REGISTER SCREEN
+  ══════════════════════════════════════ -->
+  <div id="registerScreen" class="screen">
+    <div class="auth-bg" style="background: linear-gradient(165deg, #1b5e20 0%, #43a047 50%, var(--bg) 100%);">
+      <div class="auth-blob auth-blob-1"></div>
+      <div class="auth-card">
+        <div class="auth-icon" style="background: linear-gradient(135deg,#43a047,#1b5e20);"><i class="fa-solid fa-user-plus"></i></div>
+        <h2 class="auth-title">Buat Akun BETA 🚀</h2>
+        <p class="auth-sub">Isi data di bawah ini ya!</p>
+
+        <div class="form-group">
+          <label class="form-label">Nama Lengkap</label>
+          <div class="input-wrap">
+            <i class="fa-solid fa-id-card input-icon"></i>
+            <input id="regName" class="form-input" type="text" placeholder="Nama Lengkap">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tanggal Lahir</label>
+          <div class="input-wrap">
+            <i class="fa-solid fa-calendar-days input-icon"></i>
+            <input id="regDob" class="form-input" type="date">
+          </div>
+        </div>
+        <div class="row-flex mb-12">
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Username</label>
+            <div class="input-wrap">
+              <i class="fa-solid fa-at input-icon"></i>
+              <input id="regUser" class="form-input" type="text" placeholder="username">
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Password</label>
+            <div class="input-wrap">
+              <i class="fa-solid fa-key input-icon"></i>
+              <input id="regPass" class="form-input" type="password" placeholder="password">
+            </div>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" id="registerBtn"><i class="fa-solid fa-rocket"></i> Daftar Sekarang</button>
+        <button class="btn btn-outline" id="goLoginBtn">Sudah punya akun? Masuk</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═════════════════════════════════════
+       DASHBOARD SCREEN
+  ══════════════════════════════════════ -->
+  <div id="dashboardScreen" class="screen">
+    <div style="padding: 20px 16px 0;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <div>
+          <div style="font-size:12px; color:var(--text-3); font-weight:600; text-transform:uppercase; letter-spacing:1px;">Selamat datang 👋</div>
+          <div id="dashGreetName" style="font-family:'Quicksand',sans-serif; font-size:22px; font-weight:800; color:var(--text-1);">Siswa</div>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="icon-btn" id="themeToggleBtn" title="Ganti Tema"><i class="fa-solid fa-moon" id="themeIcon"></i></button>
+          <button class="icon-btn" id="dashExportBtn" title="Export PDF"><i class="fa-solid fa-file-pdf" style="color:var(--coral);"></i></button>
+        </div>
+      </div>
+
+      <!-- Balance Card -->
+      <div class="balance-card mb-16 pulse">
+        <div class="balance-card-decor"></div>
+        <div class="balance-card-decor2"></div>
+        <div class="balance-label">TOTAL SALDO</div>
+        <div class="balance-amount" id="dashBalance">Rp 0</div>
+        <div class="balance-change" id="dashBalanceChange">
+          <i class="fa-solid fa-circle-info"></i> <span>Belum ada transaksi</span>
+        </div>
+        <div class="balance-sparkline-wrap">
+          <canvas id="sparklineChart" height="40"></canvas>
+        </div>
+      </div>
+
+      <!-- Stats Row -->
+      <div class="stats-row mb-16">
+        <div class="stat-card">
+          <div class="stat-card-icon">📥</div>
+          <div class="stat-card-val text-primary" id="dashIncome">Rp 0</div>
+          <div class="stat-card-lbl">Pemasukan</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-icon">📤</div>
+          <div class="stat-card-val text-coral" id="dashExpense">Rp 0</div>
+          <div class="stat-card-lbl">Pengeluaran</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-icon">📊</div>
+          <div class="stat-card-val" id="dashAvg" style="color:var(--gold);">Rp 0</div>
+          <div class="stat-card-lbl">Rata-rata/hari</div>
+        </div>
+      </div>
+
+      <!-- Budget Bar -->
+      <div class="budget-bar-wrap mb-16" id="budgetBarWrap" style="display:none;">
+        <div class="budget-bar-header">
+          <span>💼 Budget Harian</span>
+          <span id="budgetBarText" style="color:var(--primary);">0%</span>
+        </div>
+        <div class="budget-track">
+          <div class="budget-fill" id="budgetFill" style="width:0%"></div>
+        </div>
+        <div style="font-size:11px; color:var(--text-3); margin-top:6px;" id="budgetBarSub">Belum diatur</div>
+      </div>
+    </div>
+
+    <!-- 7-Day Chart -->
+    <div style="padding: 0 16px;">
+      <div class="section-label"><i class="fa-solid fa-chart-line text-primary"></i> Tren 7 Hari Terakhir</div>
+      <div class="chart-card mb-16">
+        <canvas id="trendChart" height="130"></canvas>
+      </div>
+
+      <!-- Donut Chart -->
+      <div class="section-label"><i class="fa-solid fa-chart-pie text-primary"></i> Komposisi Keuangan</div>
+      <div class="chart-card mb-16">
+        <canvas id="donutChart" height="160"></canvas>
+      </div>
+
+      <!-- Recent Transactions -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <div class="section-label" style="margin-bottom:0;"><i class="fa-solid fa-clock-rotate-left text-primary"></i> Terbaru</div>
+        <button class="btn btn-sm btn-outline" id="seeAllHistoryBtn" style="width:auto; padding:6px 14px;">Lihat Semua</button>
+      </div>
+      <div id="recentHistory"></div>
+    </div>
+    <div style="height: 16px;"></div>
+  </div>
+
+  <!-- ═════════════════════════════════════
+       INCOME SCREEN
+  ══════════════════════════════════════ -->
+  <div id="incomeScreen" class="screen screen-pad">
+    <div class="page-header" style="padding:0; margin-bottom:20px;">
+      <h2 class="page-title">📥 Pemasukan</h2>
+      <button class="icon-btn" id="themeToggleInc"><i class="fa-solid fa-moon" id="themeIconInc"></i></button>
+    </div>
+    <p style="font-size:13px; color:var(--text-3); margin-bottom:20px;">Yay dapat uang! Kita catat dulu ya bro dan sis 🤑</p>
+
+    <div class="card mb-16">
+      <div class="form-label mb-8">Kategori Pemasukan</div>
+      <div class="category-grid" id="incCatGrid">
+        <button class="cat-btn selected" data-cat="💵 Uang Bekal"><span class="cat-emoji">💵</span>Uang Bekal</button>
+        <button class="cat-btn" data-cat="🎁 Hadiah"><span class="cat-emoji">🎁</span>Hadiah</button>
+        <button class="cat-btn" data-cat="💰 Uang Lebih"><span class="cat-emoji">💰</span>Uang Lebih</button>
+        <button class="cat-btn" data-cat="📚 Tabungan"><span class="cat-emoji">📚</span>Tabungan</button>
+        <button class="cat-btn" data-cat="🏦 Transfer"><span class="cat-emoji">🏦</span>Transfer</button>
+        <button class="cat-btn" data-cat="✨ Lainnya"><span class="cat-emoji">✨</span>Lainnya</button>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Jumlah (Rp)</label>
+        <div class="input-wrap">
+          <i class="fa-solid fa-rupiah-sign input-icon"></i>
+          <input id="incAmount" class="form-input" type="number" inputmode="numeric" placeholder="Contoh: 15000" min="1">
+        </div>
+      </div>
+
+      <div class="form-group mb-16">
+        <label class="form-label">Catatan (opsional)</label>
+        <div class="input-wrap">
+          <i class="fa-solid fa-pen input-icon"></i>
+          <input id="incNote" class="form-input" type="text" placeholder="Dari siapa / buat apa...">
+        </div>
+      </div>
+
+      <button class="btn btn-primary" id="saveIncomeBtn"><i class="fa-solid fa-piggy-bank"></i> Simpan Pemasukan</button>
+    </div>
+  </div>
+
+  <!-- ═════════════════════════════════════
+       EXPENSE SCREEN
+  ══════════════════════════════════════ -->
+  <div id="expenseScreen" class="screen screen-pad">
+    <div class="page-header" style="padding:0; margin-bottom:20px;">
+      <h2 class="page-title">🛒 Pengeluaran</h2>
+      <button class="icon-btn" id="themeToggleExp"><i class="fa-solid fa-moon" id="themeIconExp"></i></button>
+    </div>
+    <p style="font-size:13px; color:var(--text-3); margin-bottom:16px;">Catat semua jajanmu hari ini ya! 📋</p>
+
+    <div id="expenseList" class="mb-8"></div>
+
+    <button class="btn-dashed mb-16" id="addItemBtn">
+      <i class="fa-solid fa-plus"></i> Tambah Item Jajan
+    </button>
+
+    <div class="total-card mb-16">
+      <div class="lbl">Total Belanja</div>
+      <div class="val" id="grandTotal">Rp 0</div>
+    </div>
+
+    <button class="btn btn-danger" id="saveExpenseBtn"><i class="fa-solid fa-receipt"></i> Simpan Pengeluaran</button>
+  </div>
+
+  <!-- ═════════════════════════════════════
+       HISTORY SCREEN
+  ══════════════════════════════════════ -->
+  <div id="historyScreen" class="screen screen-pad">
+    <div class="page-header" style="padding:0; margin-bottom:16px;">
+      <h2 class="page-title">📋 Riwayat</h2>
+      <button class="icon-btn" id="themeToggleHist"><i class="fa-solid fa-moon" id="themeIconHist"></i></button>
+    </div>
+
+    <div class="search-bar-wrap">
+      <i class="fa-solid fa-magnifying-glass input-icon"></i>
+      <input id="histSearch" class="search-input" type="text" placeholder="Cari transaksi...">
+    </div>
+
+    <div class="filter-tabs">
+      <button class="filter-tab active" data-filter="all">Semua</button>
+      <button class="filter-tab" data-filter="income">📥 Masuk</button>
+      <button class="filter-tab" data-filter="expense">📤 Keluar</button>
+    </div>
+
+    <div id="historyList"></div>
+  </div>
+
+  <!-- ═════════════════════════════════════
+       PROFILE SCREEN
+  ══════════════════════════════════════ -->
+  <div id="profileScreen" class="screen" style="padding-bottom: calc(var(--nav-h) + 16px);">
+    <div class="profile-header">
+      <div class="avatar-wrap">
+        <div class="avatar" id="avatarDisp">🎒</div>
+        <div class="avatar-edit-btn" id="avatarEditBtn"><i class="fa-solid fa-camera"></i></div>
+      </div>
+      <div class="profile-name" id="profName">Nama Siswa</div>
+      <div class="profile-uname">@<span id="profUser">username</span></div>
+      <input type="file" id="photoInput" accept="image/*" style="display:none;">
+    </div>
+
+    <div class="profile-body">
+      <!-- Info Rows -->
+      <div class="section-label"><i class="fa-solid fa-circle-info text-primary"></i> Info Akun</div>
+
+      <div class="info-row mb-8">
+        <div class="info-row-icon"><i class="fa-solid fa-cake-candles"></i></div>
+        <div>
+          <div class="info-row-lbl">Umur</div>
+          <div class="info-row-val"><span id="profAge">0</span> Tahun</div>
+        </div>
+      </div>
+      <div class="info-row mb-16">
+        <div class="info-row-icon"><i class="fa-solid fa-calendar"></i></div>
+        <div>
+          <div class="info-row-lbl">Bergabung Sejak</div>
+          <div class="info-row-val" id="profJoined">—</div>
+        </div>
+      </div>
+
+      <!-- Budget Setting -->
+      <div class="section-label"><i class="fa-solid fa-bullseye text-primary"></i> Budget Harian</div>
+      <div class="card mb-20">
+        <p style="font-size:13px; color:var(--text-3); margin-bottom:12px;">Atur batas pengeluaran harianmu supaya keuanganmu sehat 💚</p>
+        <div class="budget-input-wrap">
+          <div class="form-group">
+            <div class="input-wrap">
+              <i class="fa-solid fa-rupiah-sign input-icon"></i>
+              <input id="budgetInput" class="form-input" type="number" inputmode="numeric" placeholder="Contoh: 20000">
+            </div>
+          </div>
+          <button class="btn btn-primary btn-sm" id="saveBudgetBtn" style="width:auto; min-width:80px; height:50px;">Simpan</button>
+        </div>
+        <div style="font-size:12px; color:var(--text-3); margin-top:8px;" id="budgetCurrentLbl">Budget belum diatur</div>
+      </div>
+
+      <!-- Achievements -->
+      <div class="section-label"><i class="fa-solid fa-trophy text-primary"></i> Pencapaian</div>
+      <div class="ach-grid mb-20" id="achGrid"></div>
+
+      <!-- Stats Summary -->
+      <div class="section-label"><i class="fa-solid fa-chart-bar text-primary"></i> Ringkasan</div>
+      <div class="card mb-20">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div style="text-align:center; padding:12px; background:var(--surface-3); border-radius:12px;">
+            <div style="font-size:24px; font-weight:800; color:var(--primary); font-family:'Quicksand';" id="profTotalTx">0</div>
+            <div style="font-size:11px; color:var(--text-3); font-weight:600;">Total Transaksi</div>
+          </div>
+          <div style="text-align:center; padding:12px; background:var(--surface-3); border-radius:12px;">
+            <div style="font-size:24px; font-weight:800; color:var(--gold); font-family:'Quicksand';" id="profStreak">0</div>
+            <div style="font-size:11px; color:var(--text-3); font-weight:600;">Hari Berturut</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Danger Zone -->
+      <div class="section-label"><i class="fa-solid fa-triangle-exclamation text-coral"></i> Zona Bahaya</div>
+      <button class="btn btn-danger mb-8" id="clearDataBtn"><i class="fa-solid fa-trash"></i> Hapus Semua Data</button>
+      <button class="btn btn-outline" id="logoutBtn"><i class="fa-solid fa-right-from-bracket"></i> Keluar (Logout)</button>
+    </div>
+  </div>
+
+  <!-- ═════════════════════════════════════
+       BOTTOM NAV
+  ══════════════════════════════════════ -->
+  <nav id="bottomNav">
+    <button class="nav-btn active" data-screen="dashboardScreen">
+      <div class="nav-dot"></div>
+      <i class="fa-solid fa-house"></i>
+      <span>Beranda</span>
+    </button>
+    <button class="nav-btn" data-screen="incomeScreen">
+      <div class="nav-dot"></div>
+      <i class="fa-solid fa-circle-plus"></i>
+      <span>Pemasukan</span>
+    </button>
+    <button class="nav-btn" data-screen="expenseScreen">
+      <div class="nav-dot"></div>
+      <i class="fa-solid fa-bag-shopping"></i>
+      <span>Jajan</span>
+    </button>
+    <button class="nav-btn" data-screen="historyScreen">
+      <div class="nav-dot"></div>
+      <i class="fa-solid fa-clock-rotate-left"></i>
+      <span>Riwayat</span>
+    </button>
+    <button class="nav-btn" data-screen="profileScreen">
+      <div class="nav-dot"></div>
+      <i class="fa-solid fa-user"></i>
+      <span>Profil</span>
+    </button>
+  </nav>
+
+  <!-- Toast container -->
+  <div id="toastWrap"></div>
+
+</div><!-- #app -->
+
+<script>
+/* ═══════════════════════════════════════════════════════
+   BETA BEKAL TRACKER — Full JS
+═══════════════════════════════════════════════════════ */
+
+// ─── GLOBALS ─────────────────────────────────────────
+let currentUser = null;
+let chartTrend = null;
+let chartDonut = null;
+let chartSpark = null;
+let currentFilter = 'all';
+let selectedIncCat = '💵 Uang Bekal';
+let expRowCount = 0;
+
+// ─── STORAGE HELPERS ────────────────────────────────
+const getUsers = ()        => JSON.parse(localStorage.getItem('betaUsers') || '[]');
+const saveUsers = (u)      => localStorage.setItem('betaUsers', JSON.stringify(u));
+const getTx = ()           => JSON.parse(localStorage.getItem('betaTx') || '[]');
+const saveTx = (t)         => localStorage.setItem('betaTx', JSON.stringify(t));
+const getUserTx = ()       => getTx().filter(t => t.username === currentUser?.username);
+
+// ─── FORMAT ──────────────────────────────────────────
+const Rp = (n) => new Intl.NumberFormat('id-ID', {style:'currency',currency:'IDR',minimumFractionDigits:0}).format(n||0);
+const RpShort = (n) => {
+  if(Math.abs(n)>=1000000) return 'Rp '+(n/1000000).toFixed(1)+'jt';
+  if(Math.abs(n)>=1000) return 'Rp '+(n/1000).toFixed(0)+'rb';
+  return 'Rp '+n;
+};
+const fmtDate = (ts) => new Date(ts).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'});
+const fmtDay  = (ts) => new Date(ts).toLocaleDateString('id-ID',{day:'numeric',month:'short'});
+
+// ─── THEME ───────────────────────────────────────────
+function initTheme() {
+  const t = localStorage.getItem('betaTheme') || 'light';
+  applyTheme(t);
+}
+
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  localStorage.setItem('betaTheme', t);
+  const icon = t === 'dark' ? 'fa-sun' : 'fa-moon';
+  document.querySelectorAll('[id^="themeIcon"]').forEach(el => el.className = 'fa-solid ' + icon);
+}
+
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme');
+  applyTheme(cur === 'dark' ? 'light' : 'dark');
+  if(currentUser) { setTimeout(updateDashboard, 50); }
+}
+
+// ─── TOAST ───────────────────────────────────────────
+function toast(msg, type='success', icon='') {
+  const wrap = document.getElementById('toastWrap');
+  const icons = {success:'✅', error:'❌', warning:'⚠️', info:'ℹ️'};
+  const t = document.createElement('div');
+  t.className = 'toast ' + (type !== 'success' ? type : '');
+  t.innerHTML = `<span style="font-size:18px;">${icon||icons[type]||'✅'}</span><span>${msg}</span>`;
+  wrap.appendChild(t);
+  setTimeout(() => t.remove(), 3200);
+}
+
+// ─── CONFETTI ────────────────────────────────────────
+function confetti() {
+  const colors = ['#00c853','#69f0ae','#ffd740','#ff6e6e','#82b1ff','#b388ff','#ffffff'];
+  for(let i=0;i<55;i++){
+    const p = document.createElement('div');
+    p.className = 'confetti-piece';
+    p.style.cssText = `left:${Math.random()*100}vw;background:${colors[Math.floor(Math.random()*colors.length)]};animation-duration:${(Math.random()*2+2).toFixed(2)}s;animation-delay:${(Math.random()*1).toFixed(2)}s;width:${Math.random()*8+6}px;height:${Math.random()*10+8}px;transform:rotate(${Math.random()*360}deg);`;
+    document.body.appendChild(p);
+    setTimeout(()=>p.remove(), 4500);
+  }
+  if(navigator.vibrate) navigator.vibrate([50,30,80]);
+}
+
+// ─── ANIMATE NUMBER ──────────────────────────────────
+function animNum(el, from, to, dur=800) {
+  const start = performance.now();
+  const update = (now) => {
+    const p = Math.min((now-start)/dur, 1);
+    const e = 1-Math.pow(1-p, 3);
+    el.textContent = Rp(Math.round(from + (to-from)*e));
+    if(p<1) requestAnimationFrame(update);
+  };
+  requestAnimationFrame(update);
+}
+
+// ─── VIBRATE ─────────────────────────────────────────
+const vib = (p=[40]) => { try { navigator.vibrate && navigator.vibrate(p); } catch(e){} };
+
+// ─── NAVIGATION ──────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const sc = document.getElementById(id);
+  if(sc) sc.classList.add('active');
+
+  const nav = document.getElementById('bottomNav');
+  if(['loginScreen','registerScreen','splashScreen'].includes(id)){
+    nav.classList.remove('visible');
+  } else {
+    nav.classList.add('visible');
+    localStorage.setItem('betaActiveScreen', id);
+  }
+
+  // Sync nav buttons
+  document.querySelectorAll('.nav-btn').forEach(b => {
+    b.classList.toggle('active', b.getAttribute('data-screen') === id);
+  });
+
+  // Refresh content
+  if(id==='dashboardScreen') updateDashboard();
+  if(id==='profileScreen')   updateProfile();
+  if(id==='historyScreen')   renderHistory();
+  if(id==='expenseScreen' && document.getElementById('expenseList').children.length===0) addExpenseRow();
+}
+
+// ─── BOOT ────────────────────────────────────────────
+window.addEventListener('load', () => {
+  initTheme();
+
+  // Remove splash after animation
+  setTimeout(() => {
+    const splash = document.getElementById('splashScreen');
+    splash.style.transition = 'opacity 0.5s';
+    splash.style.opacity = '0';
+    setTimeout(() => { splash.style.display='none'; }, 500);
+
+    const saved = localStorage.getItem('betaCurrentUser');
+    if(saved) {
+      currentUser = JSON.parse(saved);
+      // Re-sync user from users array (in case data updated)
+      const all = getUsers();
+      const fresh = all.find(u => u.username === currentUser.username);
+      if(fresh) { currentUser = fresh; localStorage.setItem('betaCurrentUser', JSON.stringify(currentUser)); }
+
+      const activeScreen = localStorage.getItem('betaActiveScreen') || 'dashboardScreen';
+      showScreen(activeScreen);
+    } else {
+      showScreen('loginScreen');
+    }
+  }, 2600);
+
+  // Wire nav buttons (ANDROID FIX: use addEventListener)
+  document.querySelectorAll('.nav-btn').forEach(btn => {
+    let tapped = false;
+    btn.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      tapped = true;
+      vib();
+      showScreen(btn.getAttribute('data-screen'));
+      setTimeout(()=>{ tapped=false; }, 400);
+    }, {passive: false});
+    btn.addEventListener('click', () => {
+      if(tapped) return;
+      showScreen(btn.getAttribute('data-screen'));
+    });
+  });
+
+  // Theme toggle buttons
+  document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
+  document.getElementById('themeToggleInc').addEventListener('click', toggleTheme);
+  document.getElementById('themeToggleExp').addEventListener('click', toggleTheme);
+  document.getElementById('themeToggleHist').addEventListener('click', toggleTheme);
+
+  // Auth buttons
+  document.getElementById('loginBtn').addEventListener('click', login);
+  document.getElementById('goRegisterBtn').addEventListener('click', () => showScreen('registerScreen'));
+  document.getElementById('registerBtn').addEventListener('click', register);
+  document.getElementById('goLoginBtn').addEventListener('click', () => showScreen('loginScreen'));
+
+  // Enter key for login
+  ['loginUser','loginPass'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', e => { if(e.key==='Enter') login(); });
+  });
+
+  // Income
+  document.getElementById('saveIncomeBtn').addEventListener('click', addIncome);
+  document.querySelectorAll('#incCatGrid .cat-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#incCatGrid .cat-btn').forEach(b=>b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selectedIncCat = btn.getAttribute('data-cat');
+    });
+    btn.addEventListener('touchend', (e) => { e.preventDefault(); btn.click(); });
+  });
+
+  // Expense
+  document.getElementById('addItemBtn').addEventListener('click', addExpenseRow);
+  document.getElementById('saveExpenseBtn').addEventListener('click', saveExpense);
+
+  // History search
+  document.getElementById('histSearch').addEventListener('input', renderHistory);
+  document.querySelectorAll('.filter-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.filter-tab').forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
+      currentFilter = tab.getAttribute('data-filter');
+      renderHistory();
+    });
+    tab.addEventListener('touchend', (e) => { e.preventDefault(); tab.click(); });
+  });
+
+  // Profile
+  document.getElementById('avatarEditBtn').addEventListener('click', () => document.getElementById('photoInput').click());
+  document.getElementById('photoInput').addEventListener('change', handlePhotoUpload);
+  document.getElementById('saveBudgetBtn').addEventListener('click', saveBudget);
+  document.getElementById('clearDataBtn').addEventListener('click', clearData);
+  document.getElementById('logoutBtn').addEventListener('click', logout);
+  document.getElementById('dashExportBtn').addEventListener('click', exportPDF);
+  document.getElementById('seeAllHistoryBtn').addEventListener('click', () => showScreen('historyScreen'));
+});
+
+// ─── AUTH ────────────────────────────────────────────
+function register() {
+  const name = document.getElementById('regName').value.trim();
+  const dob  = document.getElementById('regDob').value;
+  const user = document.getElementById('regUser').value.trim().toLowerCase();
+  const pass = document.getElementById('regPass').value;
+
+  if(!name||!dob||!user||!pass) {
+    toast('Lengkapi semua kolom dulu ya! 🥺', 'error');
+    return;
+  }
+  if(pass.length < 4) { toast('Password minimal 4 karakter ya!', 'error'); return; }
+
+  const users = getUsers();
+  if(users.find(u=>u.username===user)) {
+    toast('Username sudah dipakai, coba nama lain!', 'error');
+    return;
+  }
+
+  users.push({
+    fullName: name, dob, username: user, password: pass,
+    photo: null, dailyBudget: 0,
+    createdAt: Date.now()
+  });
+  saveUsers(users);
+  toast('Akun berhasil dibuat! Selamat datang 🎉', 'success', '🚀');
+  showScreen('loginScreen');
+}
+
+function login() {
+  const user = document.getElementById('loginUser').value.trim().toLowerCase();
+  const pass = document.getElementById('loginPass').value;
+  const found = getUsers().find(u => u.username===user && u.password===pass);
+
+  if(found) {
+    currentUser = found;
+    localStorage.setItem('betaCurrentUser', JSON.stringify(currentUser));
+    document.getElementById('loginPass').value = '';
+    vib([30,20,60]);
+    showScreen('dashboardScreen');
+    setTimeout(() => toast(`Halo, ${found.fullName.split(' ')[0]}! Selamat datang kembali 👋`, 'success', '😊'), 400);
+  } else {
+    toast('Username atau password salah nih!', 'error');
+    ['loginUser','loginPass'].forEach(id => {
+      const el=document.getElementById(id);
+      el.classList.add('shake');
+      setTimeout(()=>el.classList.remove('shake'),500);
+    });
+  }
+}
+
+function logout() {
+  if(!confirm('Yakin mau keluar?')) return;
+  currentUser = null;
+  localStorage.removeItem('betaCurrentUser');
+  localStorage.removeItem('betaActiveScreen');
+  showScreen('loginScreen');
+}
+
+function clearData() {
+  if(!confirm('HATI-HATI! Semua transaksimu akan terhapus permanen. Lanjut?')) return;
+  if(!confirm('Beneran yakin? Data tidak bisa dikembalikan!')) return;
+  const tx = getTx().filter(t => t.username !== currentUser.username);
+  saveTx(tx);
+  toast('Semua data transaksi berhasil dihapus.', 'info', '🗑️');
+  updateDashboard();
+}
+
+// ─── SAVE TRANSACTION ───────────────────────────────
+function saveTransaction(type, title, category, amount, note='') {
+  const all = getTx();
+  all.push({
+    id: Date.now(),
+    username: currentUser.username,
+    type, title, category, amount: Number(amount),
+    note, timestamp: Date.now(),
+    date: fmtDate(Date.now())
+  });
+  saveTx(all);
+}
+
+// ─── INCOME ──────────────────────────────────────────
+function addIncome() {
+  const amount = parseFloat(document.getElementById('incAmount').value);
+  const note   = document.getElementById('incNote').value.trim();
+
+  if(!amount || amount<=0) {
+    toast('Masukkan jumlah uang yang valid ya!', 'error');
+    const el = document.getElementById('incAmount');
+    el.classList.add('shake'); setTimeout(()=>el.classList.remove('shake'),500);
+    return;
+  }
+
+  saveTransaction('income', selectedIncCat, selectedIncCat, amount, note);
+  document.getElementById('incAmount').value = '';
+  document.getElementById('incNote').value = '';
+  vib([30,20,80]);
+  confetti();
+  toast(`Pemasukan ${Rp(amount)} tersimpan! 💰`, 'success');
+  setTimeout(() => showScreen('dashboardScreen'), 600);
+}
+
+// ─── EXPENSE ─────────────────────────────────────────
+const expCats = ['🍱 Makanan','🧃 Minuman','🍔 Jajanan','📚 ATK','🚌 Transport','🎮 Hiburan','💊 Kesehatan','📱 Pulsa','✨ Lainnya'];
+
+function addExpenseRow(data={}) {
+  expRowCount++;
+  const list = document.getElementById('expenseList');
+  const row = document.createElement('div');
+  row.className = 'expense-row';
+  row.id = `expRow${expRowCount}`;
+
+  const catOptions = expCats.map(c => `<option value="${c}" ${(data.cat||'🍱 Makanan')===c?'selected':''}>${c}</option>`).join('');
+
+  row.innerHTML = `
+    <div class="expense-row-header">
+      <span class="exp-num">Item #${expRowCount}</span>
+      <button class="exp-del" onclick="removeExpenseRow('expRow${expRowCount}')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nama Item</label>
+      <div class="input-wrap">
+        <i class="fa-solid fa-tag input-icon"></i>
+        <input type="text" class="form-input exp-name" placeholder="Contoh: Es Teh, Siomay..." value="${data.name||''}">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Kategori</label>
+      <div class="input-wrap">
+        <i class="fa-solid fa-list input-icon"></i>
+        <select class="form-select exp-cat">${catOptions}</select>
+      </div>
+    </div>
+    <div class="row-flex">
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Jumlah</label>
+        <div class="input-wrap">
+          <i class="fa-solid fa-hashtag input-icon"></i>
+          <input type="number" class="form-input exp-qty" inputmode="numeric" value="${data.qty||1}" min="1" style="padding-left:38px;">
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:0; flex:2;">
+        <label class="form-label">Harga / pcs</label>
+        <div class="input-wrap">
+          <i class="fa-solid fa-rupiah-sign input-icon"></i>
+          <input type="number" class="form-input exp-price" inputmode="numeric" placeholder="0" value="${data.price||''}">
+        </div>
+      </div>
+    </div>
+    <div class="exp-subtotal">Subtotal: <span class="exp-sub">Rp 0</span></div>
+  `;
+  list.appendChild(row);
+  row.querySelectorAll('.exp-qty, .exp-price').forEach(el => el.addEventListener('input', calcTotal));
+  calcTotal();
+}
+
+function removeExpenseRow(id) {
+  const el = document.getElementById(id);
+  if(el) { el.style.animation='txIn 0.2s ease reverse'; setTimeout(()=>el.remove(), 180); }
+  setTimeout(calcTotal, 200);
+}
+
+function calcTotal() {
+  let grand = 0;
+  document.querySelectorAll('.expense-row').forEach(row => {
+    const qty   = parseFloat(row.querySelector('.exp-qty')?.value)||0;
+    const price = parseFloat(row.querySelector('.exp-price')?.value)||0;
+    const sub   = qty*price;
+    const subEl = row.querySelector('.exp-sub');
+    if(subEl) subEl.textContent = Rp(sub);
+    grand += sub;
+  });
+  document.getElementById('grandTotal').textContent = Rp(grand);
+  return grand;
+}
+
+function saveExpense() {
+  const rows = document.querySelectorAll('.expense-row');
+  if(rows.length === 0) { toast('Tambahkan item dulu ya!', 'error'); return; }
+
+  let items=[], total=0, hasErr=false;
+  rows.forEach(row => {
+    const name  = row.querySelector('.exp-name')?.value.trim();
+    const cat   = row.querySelector('.exp-cat')?.value;
+    const qty   = parseFloat(row.querySelector('.exp-qty')?.value)||0;
+    const price = parseFloat(row.querySelector('.exp-price')?.value)||0;
+    if(!name||qty<=0||price<=0) { hasErr=true; return; }
+    items.push({name,cat,qty,price,sub:qty*price});
+    total += qty*price;
+  });
+
+  if(hasErr||items.length===0) {
+    toast('Pastikan nama item dan harga diisi dengan benar!', 'error');
+    return;
+  }
+
+  const title = items.map(i=>`${i.name}(x${i.qty})`).join(', ');
+  const cats  = [...new Set(items.map(i=>i.cat))].join(', ');
+  saveTransaction('expense', title, cats, total);
+
+  document.getElementById('expenseList').innerHTML='';
+  expRowCount=0;
+  addExpenseRow();
+  vib([40,20,40]);
+  toast(`Pengeluaran ${Rp(total)} tersimpan!`, 'info', '🛒');
+  setTimeout(()=>showScreen('dashboardScreen'),600);
+}
+
+// ─── DASHBOARD ───────────────────────────────────────
+function updateDashboard() {
+  if(!currentUser) return;
+
+  const first = currentUser.fullName.split(' ')[0];
+  document.getElementById('dashGreetName').textContent = first;
+
+  const txs   = getUserTx().sort((a,b)=>a.timestamp-b.timestamp);
+  let income=0, expense=0;
+  txs.forEach(t=>{ t.type==='income' ? income+=t.amount : expense+=t.amount; });
+  const balance = income - expense;
+
+  // Animate numbers
+  const balEl  = document.getElementById('dashBalance');
+  const incEl  = document.getElementById('dashIncome');
+  const expEl  = document.getElementById('dashExpense');
+  const avgEl  = document.getElementById('dashAvg');
+
+  const prevBal = parseFloat(balEl.dataset.prev||0);
+  balEl.dataset.prev = balance;
+  animNum(balEl, prevBal, balance);
+  incEl.textContent = Rp(income);
+  expEl.textContent = Rp(expense);
+
+  // 7-day avg
+  const avg7 = get7DayAvgExpense(txs);
+  avgEl.textContent = RpShort(avg7);
+
+  // Balance change
+  const changeEl = document.getElementById('dashBalanceChange');
+  if(txs.length === 0) {
+    changeEl.innerHTML = '<i class="fa-solid fa-circle-info"></i> <span>Belum ada transaksi</span>';
+  } else {
+    const pct = income>0 ? ((balance/income)*100).toFixed(0) : 0;
+    changeEl.innerHTML = `<i class="fa-solid fa-${balance>=0?'arrow-trend-up':'arrow-trend-down'}"></i> <span>${pct}% dari total pemasukan tersisa</span>`;
+  }
+
+  // Budget bar
+  if(currentUser.dailyBudget > 0) {
+    document.getElementById('budgetBarWrap').style.display='block';
+    const todayExp = getTodayExpense(txs);
+    const pct = Math.min((todayExp/currentUser.dailyBudget)*100, 100);
+    const fill = document.getElementById('budgetFill');
+    fill.style.width = pct+'%';
+    fill.className = 'budget-fill' + (pct>=100?' danger':pct>=75?' warning':'');
+    document.getElementById('budgetBarText').textContent = pct.toFixed(0)+'%';
+    document.getElementById('budgetBarSub').textContent = `${Rp(todayExp)} / ${Rp(currentUser.dailyBudget)} hari ini`;
+    document.getElementById('budgetBarText').style.color = pct>=100?'var(--coral)':pct>=75?'var(--gold)':'var(--primary)';
+  } else {
+    document.getElementById('budgetBarWrap').style.display='none';
+  }
+
+  renderSparkline(txs, income, expense);
+  render7DayChart(txs);
+  renderDonutChart(income, expense);
+  renderRecentTx(txs);
+}
+
+function getTodayExpense(txs) {
+  const today = new Date();
+  return txs.filter(t=>{
+    const d=new Date(t.timestamp);
+    return t.type==='expense' && isSameDay(d,today);
+  }).reduce((s,t)=>s+t.amount,0);
+}
+
+function get7DayAvgExpense(txs) {
+  let total=0;
+  for(let i=0;i<7;i++){
+    const d=new Date(); d.setDate(d.getDate()-i);
+    const day=txs.filter(t=>t.type==='expense'&&isSameDay(new Date(t.timestamp),d)).reduce((s,t)=>s+t.amount,0);
+    total+=day;
+  }
+  return Math.round(total/7);
+}
+
+function isSameDay(a,b) {
+  return a.getDate()===b.getDate()&&a.getMonth()===b.getMonth()&&a.getFullYear()===b.getFullYear();
+}
+
+// Sparkline (7-day balance history)
+function renderSparkline(txs, totalIncome, totalExpense) {
+  const ctx = document.getElementById('sparklineChart').getContext('2d');
+  if(chartSpark){ chartSpark.destroy(); chartSpark=null; }
+
+  const isDark = document.documentElement.getAttribute('data-theme')==='dark';
+  const pts=[];
+  for(let i=6;i>=0;i--){
+    const cutoff=new Date(); cutoff.setDate(cutoff.getDate()-i); cutoff.setHours(23,59,59);
+    let bal=0;
+    txs.forEach(t=>{
+      if(new Date(t.timestamp)<=cutoff) bal+=(t.type==='income'?t.amount:-t.amount);
+    });
+    pts.push(bal);
+  }
+
+  chartSpark = new Chart(ctx,{
+    type:'line',
+    data:{
+      labels:Array(7).fill(''),
+      datasets:[{data:pts,borderColor:'rgba(255,255,255,0.7)',borderWidth:2,tension:0.4,pointRadius:0,fill:true,
+        backgroundColor:(ctx2)=>{
+          const g=ctx2.chart.ctx.createLinearGradient(0,0,0,40);
+          g.addColorStop(0,'rgba(255,255,255,0.3)');
+          g.addColorStop(1,'rgba(255,255,255,0)');
+          return g;
+        }
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{enabled:false}},
+      scales:{x:{display:false},y:{display:false}},
+      animation:{duration:800}
+    }
+  });
+}
+
+// 7-Day bar chart
+function render7DayChart(txs) {
+  const ctx = document.getElementById('trendChart').getContext('2d');
+  if(chartTrend){chartTrend.destroy();chartTrend=null;}
+
+  const isDark = document.documentElement.getAttribute('data-theme')==='dark';
+  const labels=[], incData=[], expData=[];
+
+  for(let i=6;i>=0;i--){
+    const d=new Date(); d.setDate(d.getDate()-i);
+    labels.push(fmtDay(d));
+    incData.push(txs.filter(t=>t.type==='income'&&isSameDay(new Date(t.timestamp),d)).reduce((s,t)=>s+t.amount,0));
+    expData.push(txs.filter(t=>t.type==='expense'&&isSameDay(new Date(t.timestamp),d)).reduce((s,t)=>s+t.amount,0));
+  }
+
+  const textCol = isDark?'#a5d6a7':'#3a6642';
+  const gridCol = isDark?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.05)';
+
+  chartTrend = new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        {label:'Pemasukan',data:incData,backgroundColor:'rgba(0,200,83,0.7)',borderRadius:6,borderSkipped:false},
+        {label:'Pengeluaran',data:expData,backgroundColor:'rgba(255,82,82,0.7)',borderRadius:6,borderSkipped:false}
+      ]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'bottom',labels:{color:textCol,font:{family:'Nunito',size:11},boxWidth:12,padding:10}},
+        tooltip:{callbacks:{label:(c)=>`${c.dataset.label}: ${Rp(c.raw)}`}}
+      },
+      scales:{
+        x:{grid:{color:gridCol},ticks:{color:textCol,font:{size:10}}},
+        y:{grid:{color:gridCol},ticks:{color:textCol,font:{size:10},callback:(v)=>RpShort(v)}}
+      },
+      animation:{duration:800}
+    }
+  });
+}
+
+// Donut chart
+function renderDonutChart(income, expense) {
+  const ctx = document.getElementById('donutChart').getContext('2d');
+  if(chartDonut){chartDonut.destroy();chartDonut=null;}
+
+  const isDark = document.documentElement.getAttribute('data-theme')==='dark';
+  const textCol = isDark?'#a5d6a7':'#3a6642';
+
+  if(income===0&&expense===0){
+    chartDonut=new Chart(ctx,{
+      type:'doughnut',
+      data:{labels:['Belum ada data'],datasets:[{data:[1],backgroundColor:[isDark?'#2a4a2c':'#e8f5ea'],borderWidth:0}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}
+    });
+    return;
+  }
+
+  const saved = Math.max(0, income-expense);
+  chartDonut=new Chart(ctx,{
+    type:'doughnut',
+    data:{
+      labels:['Saldo Tersisa','Pengeluaran'],
+      datasets:[{
+        data:[saved, expense],
+        backgroundColor:['#00c853','#ff5252'],
+        borderWidth:4,
+        borderColor:isDark?'#111f14':'#ffffff'
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      cutout:'70%',
+      plugins:{
+        legend:{position:'bottom',labels:{color:textCol,font:{family:'Nunito',size:11},boxWidth:12,padding:12}},
+        tooltip:{callbacks:{label:(c)=>`${c.label}: ${Rp(c.raw)}`}}
+      },
+      animation:{duration:800,animateScale:true}
+    }
+  });
+}
+
+// Recent transactions (5)
+function renderRecentTx(txs) {
+  const wrap = document.getElementById('recentHistory');
+  const sorted = [...txs].sort((a,b)=>b.timestamp-a.timestamp).slice(0,5);
+  if(sorted.length===0){
+    wrap.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><p>Belum ada transaksi nih.<br>Yuk catat pemasukan atau jajan kamu!</p></div>';
+    return;
+  }
+  wrap.innerHTML = sorted.map(t => txCard(t, false)).join('');
+}
+
+// ─── HISTORY ─────────────────────────────────────────
+function renderHistory() {
+  const wrap   = document.getElementById('historyList');
+  const search = (document.getElementById('histSearch')?.value||'').toLowerCase();
+  let txs = getUserTx().sort((a,b)=>b.timestamp-a.timestamp);
+
+  if(currentFilter !== 'all') txs = txs.filter(t=>t.type===currentFilter);
+  if(search) txs = txs.filter(t=>t.title.toLowerCase().includes(search)||t.date.toLowerCase().includes(search)||t.category?.toLowerCase().includes(search));
+
+  if(txs.length===0){
+    wrap.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div><p>Tidak ada transaksi ditemukan.</p></div>';
+    return;
+  }
+
+  // Group by date
+  const groups = {};
+  txs.forEach(t=>{
+    const k = fmtDate(t.timestamp);
+    if(!groups[k]) groups[k]=[];
+    groups[k].push(t);
+  });
+
+  wrap.innerHTML = Object.entries(groups).map(([date,items])=>
+    `<div style="font-size:12px;font-weight:700;color:var(--text-3);margin:14px 0 8px;">${date}</div>` +
+    items.map(t=>txCard(t,true)).join('')
+  ).join('');
+}
+
+function txCard(t, showDel) {
+  const isIn = t.type==='income';
+  const emoji = catEmoji(t.category||t.title);
+  return `
+  <div class="tx-item" style="animation-delay:${Math.random()*0.2}s">
+    <div class="tx-icon ${t.type}" style="font-size:22px;">${emoji}</div>
+    <div class="tx-info">
+      <div class="tx-title">${t.title}</div>
+      <div class="tx-meta">${t.date}${t.note?' · '+t.note:''}</div>
+    </div>
+    <div class="tx-amount ${t.type}">${isIn?'+':'-'}${Rp(t.amount)}</div>
+    ${showDel?`<button class="tx-del-btn" onclick="deleteTx(${t.id})"><i class="fa-solid fa-trash-can"></i></button>`:''}
+  </div>`;
+}
+
+function deleteTx(id) {
+  if(!confirm('Hapus transaksi ini?')) return;
+  saveTx(getTx().filter(t=>t.id!==id));
+  renderHistory();
+  vib([30,20,30]);
+  toast('Transaksi dihapus.','info','🗑️');
+}
+
+function catEmoji(cat) {
+  if(!cat) return '💸';
+  if(cat.includes('Makanan')||cat.includes('Bekal')) return '🍱';
+  if(cat.includes('Minuman')) return '🧃';
+  if(cat.includes('Jajanan')) return '🍔';
+  if(cat.includes('ATK')||cat.includes('Buku')) return '📚';
+  if(cat.includes('Transport')) return '🚌';
+  if(cat.includes('Hiburan')) return '🎮';
+  if(cat.includes('Kesehatan')) return '💊';
+  if(cat.includes('Pulsa')) return '📱';
+  if(cat.includes('Uang Bekal')||cat.includes('💵')) return '💵';
+  if(cat.includes('Hadiah')||cat.includes('🎁')) return '🎁';
+  if(cat.includes('Tabungan')||cat.includes('📚')) return '🏦';
+  if(cat.includes('Transfer')) return '🏦';
+  return '✨';
+}
+
+// ─── PROFILE ─────────────────────────────────────────
+function updateProfile() {
+  if(!currentUser) return;
+
+  document.getElementById('profName').textContent = currentUser.fullName;
+  document.getElementById('profUser').textContent = currentUser.username;
+
+  // Age
+  const bday = new Date(currentUser.dob);
+  const today = new Date();
+  let age = today.getFullYear()-bday.getFullYear();
+  if(today.getMonth()<bday.getMonth()||(today.getMonth()===bday.getMonth()&&today.getDate()<bday.getDate())) age--;
+  document.getElementById('profAge').textContent = isNaN(age)?'?':age;
+
+  // Joined
+  document.getElementById('profJoined').textContent = currentUser.createdAt ? fmtDate(currentUser.createdAt) : '—';
+
+  // Avatar
+  const avatarDisp = document.getElementById('avatarDisp');
+  if(currentUser.photo){
+    avatarDisp.innerHTML = `<img src="${currentUser.photo}" alt="foto">`;
+  } else {
+    avatarDisp.innerHTML = '🎒';
+  }
+
+  // Budget
+  if(currentUser.dailyBudget>0){
+    document.getElementById('budgetInput').value = currentUser.dailyBudget;
+    document.getElementById('budgetCurrentLbl').textContent = `Budget saat ini: ${Rp(currentUser.dailyBudget)}/hari`;
+  }
+
+  // Stats
+  const txs = getUserTx();
+  document.getElementById('profTotalTx').textContent = txs.length;
+  document.getElementById('profStreak').textContent = calcStreak(txs);
+
+  // Achievements
+  renderAchievements(txs);
+}
+
+function handlePhotoUpload(e) {
+  const file = e.target.files[0];
+  if(!file) return;
+  if(file.size > 3*1024*1024){ toast('Foto terlalu besar (maks 3MB)', 'error'); return; }
+
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const base64 = ev.target.result;
+    // Compress via canvas
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const MAX = 200;
+      let w=img.width, h=img.height;
+      if(w>h){ if(w>MAX){h=Math.round(h*MAX/w);w=MAX;} } else { if(h>MAX){w=Math.round(w*MAX/h);h=MAX;} }
+      canvas.width=w; canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      const compressed = canvas.toDataURL('image/jpeg', 0.7);
+
+      // Save
+      const users = getUsers();
+      const idx = users.findIndex(u=>u.username===currentUser.username);
+      if(idx>-1){ users[idx].photo=compressed; saveUsers(users); }
+      currentUser.photo = compressed;
+      localStorage.setItem('betaCurrentUser', JSON.stringify(currentUser));
+
+      document.getElementById('avatarDisp').innerHTML = `<img src="${compressed}" alt="foto">`;
+      toast('Foto profil berhasil diupdate! 📸', 'success');
+    };
+    img.src = base64;
+  };
+  reader.readAsDataURL(file);
+}
+
+function saveBudget() {
+  const val = parseFloat(document.getElementById('budgetInput').value);
+  if(!val||val<0){ toast('Masukkan jumlah budget yang valid!','error'); return; }
+
+  const users = getUsers();
+  const idx = users.findIndex(u=>u.username===currentUser.username);
+  if(idx>-1){ users[idx].dailyBudget=val; saveUsers(users); }
+  currentUser.dailyBudget = val;
+  localStorage.setItem('betaCurrentUser', JSON.stringify(currentUser));
+
+  document.getElementById('budgetCurrentLbl').textContent = `Budget saat ini: ${Rp(val)}/hari`;
+  toast(`Budget harian diatur ke ${Rp(val)} ✅`,'success');
+  vib([30,20,60]);
+}
+
+function calcStreak(txs) {
+  if(txs.length===0) return 0;
+  let streak=0, d=new Date();
+  for(let i=0;i<90;i++){
+    const hasAny = txs.some(t=>isSameDay(new Date(t.timestamp),d));
+    if(hasAny){ streak++; d.setDate(d.getDate()-1); } else break;
+  }
+  return streak;
+}
+
+const ACHIEVEMENTS = [
+  {id:'first', emoji:'🌱', name:'Pemula Hemat', desc:'Transaksi pertama', check:(txs)=>txs.length>=1},
+  {id:'tx10',  emoji:'📊', name:'Pencatat Rajin', desc:'10 transaksi', check:(txs)=>txs.length>=10},
+  {id:'tx30',  emoji:'🏆', name:'Ahli Keuangan', desc:'30 transaksi', check:(txs)=>txs.length>=30},
+  {id:'save',  emoji:'💎', name:'Penabung Bijak', desc:'Saldo > Rp 50.000', check:(txs)=>{
+    let b=0; txs.forEach(t=>b+=(t.type==='income'?t.amount:-t.amount)); return b>=50000;
+  }},
+  {id:'streak3',emoji:'🔥',name:'Konsisten',desc:'3 hari berturut-turut', check:(txs)=>calcStreak(txs)>=3},
+  {id:'streak7',emoji:'⚡',name:'Super Konsisten',desc:'7 hari berturut-turut', check:(txs)=>calcStreak(txs)>=7},
+];
+
+function renderAchievements(txs) {
+  const grid = document.getElementById('achGrid');
+  grid.innerHTML = ACHIEVEMENTS.map(a=>{
+    const unlocked = a.check(txs);
+    return `
+    <div class="ach-card ${unlocked?'':'locked'}">
+      <div class="ach-emoji">${a.emoji}</div>
+      <div>
+        <div class="ach-name">${a.name}</div>
+        <div class="ach-desc">${a.desc}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── PDF EXPORT ──────────────────────────────────────
+function exportPDF() {
+  if(!currentUser){ toast('Login dulu ya!','error'); return; }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const txs = getUserTx().sort((a,b)=>a.timestamp-b.timestamp);
+
+  let totalIn=0, totalOut=0;
+  const body = txs.map((t,i)=>{
+    if(t.type==='income') totalIn+=t.amount; else totalOut+=t.amount;
+    return [i+1, t.date, t.type==='income'?'Pemasukan':'Pengeluaran', t.title.substring(0,30), Rp(t.amount)];
+  });
+
+  // Header
+  doc.setFontSize(18);
+  doc.setTextColor(0,100,30);
+  doc.text('Laporan BETA — Bekal Tracker', 14, 18);
+  doc.setFontSize(10);
+  doc.setTextColor(80,80,80);
+  doc.text(`Dicetak: ${new Date().toLocaleDateString('id-ID')} | Siswa: ${currentUser.fullName} (@${currentUser.username})`, 14, 26);
+
+  doc.setFontSize(11);
+  doc.setTextColor(0,0,0);
+  doc.text(`Total Pemasukan   : ${Rp(totalIn)}`, 14, 36);
+  doc.text(`Total Pengeluaran : ${Rp(totalOut)}`, 14, 43);
+  doc.setFont(undefined,'bold');
+  doc.setTextColor(0, Math.max(0,100-Math.floor((totalOut/Math.max(totalIn,1))*100)),0);
+  doc.text(`Saldo Akhir       : ${Rp(totalIn-totalOut)}`, 14, 50);
+  doc.setFont(undefined,'normal');
+  doc.setTextColor(0,0,0);
+
+  doc.autoTable({
+    startY: 58,
+    head: [['No','Tanggal','Jenis','Keterangan','Nominal']],
+    body,
+    headStyles:{fillColor:[0,150,60]},
+    alternateRowStyles:{fillColor:[235,250,238]},
+    styles:{fontSize:9},
+    columnStyles:{0:{cellWidth:8},1:{cellWidth:25},2:{cellWidth:22},3:{cellWidth:85},4:{cellWidth:32}}
+  });
+
+  doc.save(`BETA_${currentUser.username}_${Date.now()}.pdf`);
+  toast('Laporan PDF berhasil diunduh!','success','📄');
+}
+</script>
+</body>
+</html>
