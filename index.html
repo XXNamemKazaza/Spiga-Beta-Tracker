@@ -49,31 +49,62 @@
   --radius-md: 20px;
   --radius-lg: 28px;
 }
-
+/* ═══════════════════════════════════════════
+   DARK THEME (BLUISH GLASSMORPHISM)
+═══════════════════════════════════════════ */
 [data-theme="dark"] {
-  --bg: #07120a;
-  --surface: #111f14;
-  --surface-2: #172a1a;
-  --surface-3: #1e3521;
-  --primary: #69f0ae;
-  --primary-mid: #00e676;
-  --primary-dark: #b9f6ca;
-  --primary-light: #1b3d22;
-  --primary-glow: rgba(105,240,174,0.15);
-  --gold: #ffd740;
-  --gold-light: #2a2000;
-  --coral: #ff6e6e;
-  --coral-light: #2d1010;
-  --blue: #82b1ff;
-  --blue-light: #0d1a2d;
-  --purple: #b388ff;
-  --text-1: #e8f5e9;
-  --text-2: #a5d6a7;
-  --text-3: #4a8a4c;
-  --border: #1e3d21;
-  --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
-  --shadow-md: 0 8px 24px rgba(0,0,0,0.4);
-  --shadow-lg: 0 16px 40px rgba(0,0,0,0.5);
+  --bg: #090e17; /* Biru navy sangat gelap untuk background dasar */
+  --surface: rgba(15, 23, 42, 0.75); /* Transparan kebiruan */
+  --surface-2: rgba(30, 41, 59, 0.6); /* Card transparan */
+  --surface-3: rgba(51, 65, 85, 0.5);
+  --primary: #38bdf8; /* Biru cerah / Cyan neon */
+  --primary-mid: #0ea5e9;
+  --primary-dark: #0284c7;
+  --primary-light: rgba(56, 189, 248, 0.15);
+  --primary-glow: rgba(56, 189, 248, 0.3);
+  --gold: #fbbf24;
+  --gold-light: rgba(251, 191, 36, 0.1);
+  --coral: #f87171;
+  --coral-light: rgba(248, 113, 113, 0.1);
+  --blue: #60a5fa;
+  --blue-light: rgba(96, 165, 250, 0.1);
+  --purple: #c084fc;
+  --text-1: #f8fafc; /* Putih kebiruan terang */
+  --text-2: #cbd5e1; /* Abu-abu kebiruan */
+  --text-3: #64748b;
+  --border: rgba(148, 163, 185, 0.12); /* Border tipis transparan */
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.5);
+}
+
+/* Efek Blur Kaca (Glassmorphism) khusus dark mode */
+[data-theme="dark"] #app,
+[data-theme="dark"] #bottomNav,
+[data-theme="dark"] .card,
+[data-theme="dark"] .stat-card,
+[data-theme="dark"] .chart-card,
+[data-theme="dark"] .budget-bar-wrap,
+[data-theme="dark"] .expense-row,
+[data-theme="dark"] .tx-item,
+[data-theme="dark"] .auth-card {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+}
+
+/* Modifikasi gradasi kartu utama biar senada dengan tema biru */
+[data-theme="dark"] .balance-card,
+[data-theme="dark"] .profile-header {
+  background: linear-gradient(135deg, rgba(2, 132, 199, 0.85) 0%, rgba(15, 23, 42, 0.9) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+[data-theme="dark"] .total-card {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.9), rgba(2, 132, 199, 0.9));
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* ═══════════════════════════════════════════
